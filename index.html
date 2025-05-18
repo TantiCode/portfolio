@@ -6,7 +6,7 @@
   <title>Your Minimal Portfolio</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { margin: 0; font-family: 'Inter', sans-serif; background: #f8fafc; color: #1f2937; }
+    body { margin: 0; font-family: 'Inter', sans-serif; background: #f8fafc; color: #1f2937; overflow-x: hidden; }
     #background-shapes { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; filter: blur(5px); }
     .fade-in { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease-out, transform 0.6s ease-out; }
     .fade-in.visible { opacity: 1; transform: translateY(0); }
@@ -37,6 +37,7 @@
       transition: all 0.3s ease; 
       transform: translateY(-100%); 
       opacity: 0; 
+      will-change: transform, opacity; 
     }
     nav.visible { transform: translateY(0); opacity: 1; }
     nav.sticky { background: #ffffff; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); }
@@ -44,6 +45,7 @@
       transition: all 0.3s ease; 
       transform: translateY(100%); 
       opacity: 0; 
+      will-change: transform, opacity; 
     }
     footer.visible { transform: translateY(0); opacity: 1; }
     .page { display: none; }
@@ -79,6 +81,19 @@
       font-size: 1.5rem; 
       cursor: pointer; 
     }
+    #home { 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      min-height: 100vh; 
+      padding: 0; 
+    }
+    #home > div { 
+      width: 100%; 
+      max-width: 48rem; 
+      margin: 0 auto; 
+      padding: 1rem; 
+    }
   </style>
 </head>
 <body>
@@ -101,8 +116,8 @@
   </nav>
 
   <!-- Home Page -->
-  <section id="home" class="page min-h-screen flex items-center justify-center bg-transparent">
-    <div class="text-center fade-in max-w-3xl mx-auto px-4">
+  <section id="home" class="page bg-transparent">
+    <div class="text-center fade-in">
       <img src="./assets/profile.jpg" alt="Profile Picture" class="profile-img mx-auto mb-6 w-32 h-32 rounded-full object-cover border-2 border-gray-200">
       <h1 class="text-4xl font-bold mb-4 text-gray-800">Welcome to My Portfolio</h1>
       <p class="text-lg text-gray-600 mb-6">I'm [Your Name], a developer passionate about creating impactful solutions.</p>
@@ -281,7 +296,7 @@
     function smoothScroll(target, duration) {
       const targetElement = document.querySelector(target);
       if (!targetElement) return;
-      const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset;
+      const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset - 80; // Offset for nav
       const startPosition = window.pageYOffset;
       const distance = targetPosition - startPosition;
       let startTime = null;
@@ -290,7 +305,7 @@
         if (startTime === null) startTime = currentTime;
         const timeElapsed = currentTime - startTime;
         const run = ease(timeElapsed, startPosition, distance, duration);
-        window.scrollTo(0, run);
+        window.scrollTo({ top: run, behavior: 'auto' });
         if (timeElapsed < duration) requestAnimationFrame(animation);
       }
 
@@ -312,7 +327,7 @@
       canvas.height = window.innerHeight;
 
       const shapes = [];
-      const numShapes = 15;
+      const numShapes = 10; // Reduced for performance
       const types = ['circle', 'hexagon'];
 
       for (let i = 0; i < numShapes; i++) {
@@ -321,8 +336,8 @@
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
           size: Math.random() * 20 + 10,
-          vx: (Math.random() - 0.5) * 2,
-          vy: (Math.random() - 0.5) * 2,
+          vx: (Math.random() - 0.5) * 1.5, // Slower velocity
+          vy: (Math.random() - 0.5) * 1.5,
           color: `rgba(200, 200, 200, ${Math.random() * 0.2 + 0.1})`
         });
       }
@@ -360,9 +375,11 @@
           // Edge collision
           if (shape.x + shape.size / 2 > canvas.width || shape.x - shape.size / 2 < 0) {
             shape.vx *= -1;
+            shape.x = Math.max(shape.size / 2, Math.min(canvas.width - shape.size / 2, shape.x));
           }
           if (shape.y + shape.size / 2 > canvas.height || shape.y - shape.size / 2 < 0) {
             shape.vy *= -1;
+            shape.y = Math.max(shape.size / 2, Math.min(canvas.height - shape.size / 2, shape.y));
           }
 
           drawShape(shape);
@@ -448,11 +465,22 @@
     // Sticky Navigation
     function initStickyNav() {
       const nav = document.querySelector('nav');
+      let lastScrollY = window.scrollY;
+      let ticking = false;
+
       window.addEventListener('scroll', () => {
-        if (window.scrollY > 50) {
-          nav.classList.add('sticky');
-        } else {
-          nav.classList.remove('sticky');
+        if (!ticking) {
+          requestAnimationFrame(() => {
+            const currentScrollY = window.scrollY;
+            if (currentScrollY > 50) {
+              nav.classList.add('sticky');
+            } else {
+              nav.classList.remove('sticky');
+            }
+            lastScrollY = currentScrollY;
+            ticking = false;
+          });
+          ticking = true;
         }
       });
     }
